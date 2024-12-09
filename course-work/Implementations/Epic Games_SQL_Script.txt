@@ -1,0 +1,406 @@
+
+alter table UserAccount
+Alter Column CityId int not null
+
+alter table UserAccount
+Alter Column BirthDate date not null
+
+Alter table UserAccount
+Add Foreign key (CityId) references Cities(Id)
+
+CREATE TABLE UserAccount(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	Username NVARCHAR(255) NOT NULL,
+	Password NVARCHAR(255) NOT NULL,
+	Email NVARCHAR(255) NOT NULL,
+	FirstName NVARCHAR(255) NOT NULL,
+	LastName NVARCHAR(255) NOT NULL,
+	CityId NVARCHAR(255) NOT NULL, -- Направи отделна таблица Countries както в примерите 
+	Phone NVARCHAR(255) NOT NULL,
+	BirthDate date NOT NULL
+);
+
+CREATE TABLE Countries(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	CountryName NVARCHAR(255) NOT NULL
+);
+
+INSERT INTO Countries(CountryName)
+VALUES('Bulgaria')
+SELECT * from Countries
+
+CREATE TABLE Genre(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	Genre NVARCHAR(255) NOT NULL
+);
+INSERT INTO Genre(Genre)
+VALUES('Adventure')
+
+CREATE TABLE ItemType(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	ItemType NVARCHAR(255)
+);
+INSERT INTO ItemType(ItemType)
+VALUES('Merch')
+CREATE TABLE Serveces(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	ServiceType NVARCHAR(255) NOT NULL,
+	Price DECIMAL NOT NULL,
+);
+
+INSERT INTO Serveces(ServiceType,Price)
+VALUES('Epic Gamer' ,50)
+
+
+CREATE TABLE Cities(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	CityName NVARCHAR(255) NOT NULL,
+	CountryId INT FOREIGN KEY REFERENCES Countries(Id) NOT NULL
+);
+
+INSERT INTO Cities(CityName,CountryId)
+VALUES('Gabrovo',1)
+
+
+CREATE TABLE Game(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	GameName NVARCHAR(255) NOT NULL,
+	Price DECIMAL NOT NULL,
+	Released DATE NOT NULL,
+	GenreId INT FOREIGN KEY REFERENCES Genre(Id) NOT NULL
+	
+);
+
+Create procedure AddGame (
+    @GameName nvarchar(255),
+    @Price decimal,
+    @Released date,
+    @GenreId int
+    
+)
+As
+Begin
+        Insert into Game(GameName,Price,Released,GenreId)
+        Values(@GameName, @Price, @Released, @GenreId);
+End
+select * from Genre
+
+EXEC AddGame 'Fortnite','0','2017-07-21','1'
+EXEC AddGame 'Brotato','5','2024-10-25','4'
+EXEC AddGame 'Forza Horizon 5','120','2021-11-01','3'
+EXEC AddGame 'God of War','60','2018-04-20','2'
+
+CREATE TABLE Item(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	ItemName NVARCHAR(255) NOT NULL,
+	TypeId INT FOREIGN KEY REFERENCES ItemType(Id) NOT NULL,
+	Price DECIMAL NOT NULL
+);
+
+Create procedure AddItem (
+    @ItemName nvarchar(255),
+    @TypeId int,
+    @Price decimal
+    
+)
+As
+Begin
+        Insert into Item(ItemName,TypeId,Price)
+        Values(@ItemName, @TypeId, @Price);
+End
+select * from ItemType
+EXEC AddItem 'Fortnite T-Shirt','2','30'
+EXEC AddItem 'Leviathan axe','1','100'
+EXEC AddItem 'V-bucks 500','3','5'
+
+alter table Shop
+Alter Column ServiceId INT NULL
+
+CREATE TABLE Shop(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	GameId INT FOREIGN KEY REFERENCES Game(Id) NULL,
+	ItemId INT FOREIGN KEY REFERENCES Item(Id) NULL,
+	ServiceId INT FOREIGN KEY REFERENCES Serveces(Id) NULL
+);
+
+create procedure AddShopCart (
+    @GameId int = null,
+    @ItemId int = null,
+    @ServiceId int = null
+    
+)
+As
+Begin
+        Insert into Shop(GameId,ItemId,ServiceId)
+        Values(@GameId, @ItemId, @ServiceId);
+End
+
+Insert into Shop(GameId,ItemId)
+        Values(1,1);
+
+EXEC AddShopCart 4,2,1
+
+select * from Game
+select * from Item
+select * from Serveces
+select * from Shop
+select * from UserAccount
+select * from Bought
+
+CREATE TABLE Bought(
+	Id INT PRIMARY KEY IDENTITY(1,1),
+	ShopId INT FOREIGN KEY REFERENCES Shop(Id) NOT NULL,
+	UserId INT FOREIGN KEY REFERENCES UserAccount(Id) NOT NULL
+);
+
+	
+
+insert into Bought(ShopId,UserId)
+values(1,1)
+insert into Bought(ShopId,UserId)
+values(1,7)
+insert into Bought(ShopId,UserId)
+values(8,5)
+insert into Bought(ShopId,UserId)
+values(8,3)
+insert into Bought(ShopId,UserId)
+values(7,4)
+insert into Bought(ShopId,UserId)
+values(7,10)
+insert into Bought(ShopId,UserId)
+values(9,2)
+insert into Bought(ShopId,UserId)
+values(10,8)
+
+
+
+Create procedure CreateUser (
+    @Username nvarchar(255),
+    @Password nvarchar(255),
+    @Email nvarchar(255) = null,
+    @FirstName nvarchar(255) = null,
+    @LastName nvarchar(255),
+    @CityId int,
+    @Phone nvarchar(255),
+	@BirthDate date
+)
+As
+Begin
+        Insert into UserAccount(Username, Password, Email, FirstName,LastName, CityId, Phone, BirthDate)
+        Values(@Username, @Password, @Email, @FirstName, @LastName, @CityId, @Phone, @BirthDate);
+End
+
+EXEC CreateUser 'Hris22','HristiyqnBv792','hriskata@abv.bg','Hristiyan','Baev','1','0898103305','2003-04-22'
+EXEC CreateUser 'ZdrHr','hristov34','zdrhr34@abv.bg','Zdravko','Hristov','3','0998553305','2005-06-03'
+
+
+Alter table Bought
+add TotalPrice decimal
+
+create Trigger BoughtThings
+On Bought
+Instead of Insert
+AS
+Begin
+	Declare @UserId as int = (select UserId from inserted);
+	Declare @ShopId as int = (select ShopId from inserted);
+
+	Declare @User as nvarchar(255) = (
+		Select Username from UserAccount
+		where Id = @UserId	
+	);
+
+	Declare @GameId as int = (
+		Select GameId from Shop
+		where Id = @ShopId
+	);
+
+	Declare @ItemId as int = (
+		Select ItemId from Shop
+		where Id = @ShopId
+	);
+
+	Declare @ServiceId as int = (
+		Select ServiceId from Shop
+		where Id = @ShopId
+	);
+
+	Declare @Game as nvarchar(255) = (
+		Select GameName from Game
+		where Id = @GameId
+	);
+
+	Declare @Item as nvarchar(255) = (
+		Select ItemName from Item
+		where Id = @ItemId
+	);
+
+	Declare @Service as nvarchar(255) = (
+		Select ServiceType from Serveces
+		where Id = @ServiceId
+	);
+
+	Declare @Price as nvarchar(255) = (
+		select Sum(g.Price + i.Price + ser.Price) from Shop s
+		Inner join Game g on
+		g.Id = s.GameId
+		inner join Item i On
+		i.Id = s.ItemId
+		inner join Serveces ser On
+		ser.Id = s.ServiceId
+		where s.Id = @shopId
+	)
+
+	Print( @User + ' bought successfully ' + @Game + ' ' + @Item + ' ' + @Service + ' for ' + @Price);
+	
+	insert into Bought(ShopId, UserId)
+	Values(@ShopId, @UserId);
+End;
+
+
+create Function BoughtFunction (
+    @GameName as nvarchar(255)
+)
+Returns Table
+as
+Return(
+    Select c.Username as 'User' from Bought b
+    inner join UserAccount c On
+    c.Id = b.Id
+    Inner join Game g On 
+    g.Id = b.Id 
+    where g.GameName = @GameName
+);
+
+select * from BoughtFunction('Fortnite')
+
+create Trigger BoughtThings
+On Bought
+Instead of Insert
+AS
+Begin
+	Declare @UserId as int = (select UserId from inserted);
+	Declare @ShopId as int = (select ShopId from inserted);
+
+	Declare @User as nvarchar(255) = (
+		Select Username from UserAccount
+		where Id = @UserId	
+	);
+
+	Declare @GameId as int = (
+		Select GameId from Shop
+		where Id = @ShopId
+	);
+
+	Declare @ItemId as int = (
+		Select ItemId from Shop
+		where Id = @ShopId
+	);
+
+	Declare @ServiceId as int = (
+		Select ServiceId from Shop
+		where Id = @ShopId
+	);
+
+	Declare @Game as nvarchar(255) = (
+		Select GameName from Game
+		where Id = @GameId
+	);
+
+	Declare @Item as nvarchar(255) = (
+		Select ItemName from Item
+		where Id = @ItemId
+	);
+
+	Declare @Service as nvarchar(255) = (
+		Select ServiceType from Serveces
+		where Id = @ServiceId
+	);
+
+	if @ServiceId = null
+	BEGIN
+		Declare @PriceWithoutService as nvarchar(255) = (
+		select Sum(g.Price + i.Price) as Total 
+		from Shop s
+		Inner join Game g on
+		g.Id = s.GameId
+		inner join Item i On
+		i.Id = s.ItemId
+		where s.Id = @shopId
+		)
+
+		Print( @User + ' bought successfully ' + @Game + ' ' + @Item + ' ' + @Service + ' for ' + @PriceWithoutService);
+	
+		insert into Bought(ShopId, UserId,TotalPrice)
+		Values(@ShopId, @UserId,@PriceWithoutService);
+
+	END ELSE If @ItemId = null
+	BEGIN
+		Declare @PriceWithoutItem as nvarchar(255) = (
+		select Sum(g.Price + ser.Price) from Shop s
+		Inner join Game g on
+		g.Id = s.GameId		
+		inner join Serveces ser On
+		ser.Id = s.ServiceId
+		where s.Id = @shopId
+		)
+
+		Print( @User + ' bought successfully ' + @Game + ' ' + @Item + ' ' + @Service + ' for ' + @PriceWithoutItem);
+	
+		insert into Bought(ShopId, UserId,TotalPrice)
+		Values(@ShopId, @UserId,@PriceWithoutItem);
+
+	END ELSE If @ItemId = null
+	BEGIN
+		Declare @PriceWithoutGame as nvarchar(255) = (
+		select Sum(i.Price + ser.Price) from Shop s		
+		inner join Item i On
+		i.Id = s.ItemId
+		inner join Serveces ser On
+		ser.Id = s.ServiceId
+		where s.Id = @shopId
+		)
+
+		Print( @User + ' bought successfully ' + @Game + ' ' + @Item + ' ' + @Service + ' for ' + @PriceWithoutGame);
+	
+	insert into Bought(ShopId, UserId,TotalPrice)
+	Values(@ShopId, @UserId,@PriceWithoutGame);
+
+	END ELSE 
+	BEGIN	
+		Declare @PriceAll as nvarchar(255) = (
+		select Sum(g.Price + i.Price + ser.Price) from Shop s
+		Inner join Game g on
+		g.Id = s.GameId
+		inner join Item i On
+		i.Id = s.ItemId
+		inner join Serveces ser On
+		ser.Id = s.ServiceId
+		where s.Id = @shopId
+		)	
+
+		Print( @User + ' bought successfully ' + @Game + ' ' + @Item + ' ' + @Service + ' for ' + @PriceAll);
+	
+	insert into Bought(ShopId, UserId,TotalPrice)
+	Values(@ShopId, @UserId,@PriceAll);
+
+	END;
+		
+End;
+
+
+create Function BoughtFunction (
+    @GameName as nvarchar(255)
+)
+Returns Table
+as
+Return(
+    Select c.Username as 'User' from Bought b
+    inner join UserAccount c On
+    c.Id = b.UserId
+    Inner join Game g On 
+    g.Id = b.GameId 
+    where g.GameName = @GameName
+);
+
+select * from FunctionBought('Brotato')
